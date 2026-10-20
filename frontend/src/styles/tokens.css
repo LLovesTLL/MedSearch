@@ -1,0 +1,56 @@
+:root {
+  --color-background: #fafafa;
+  --color-foreground: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #0052ff;
+  --color-accent-secondary: #4d7cff;
+  --color-accent-foreground: #ffffff;
+  --color-border: #e2e8f0;
+  --color-card: #ffffff;
+  --color-ring: #0052ff;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+
+  --gradient-accent: linear-gradient(135deg, #0052ff 0%, #4d7cff 100%);
+  --gradient-accent-soft: linear-gradient(
+    135deg,
+    rgba(0, 82, 255, 0.08) 0%,
+    rgba(77, 124, 255, 0.12) 100%
+  );
+  --gradient-tag: linear-gradient(135deg, #0052ff 0%, #3b82f6 55%, #60a5fa 100%);
+
+  --font-display: 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei UI',
+    'Noto Sans SC', sans-serif;
+  --font-body: 'Inter', 'Geist Sans', 'PingFang SC', 'Microsoft YaHei UI',
+    'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.08);
+  --shadow-xl: 0 20px 25px rgba(15, 23, 42, 0.1);
+  --shadow-accent: 0 4px 14px rgba(0, 82, 255, 0.25);
+  --shadow-accent-lg: 0 8px 24px rgba(0, 82, 255, 0.35);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-entrance: 700ms;
+}

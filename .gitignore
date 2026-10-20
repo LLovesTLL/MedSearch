@@ -1,0 +1,29 @@
+# 密钥与环境变量（严禁入库）
+backend/.env
+.env
+*.env.local
+
+# 依赖与构建产物
+node_modules/
+dist/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 前端测试编译产物（esbuild 生成）
+frontend/tests/*.mjs
+
+# 工具目录与快照
+.arts/
+.merkle-snapshot.json
+
+# 日志
+*.log
+
+# 编辑器与系统文件
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
