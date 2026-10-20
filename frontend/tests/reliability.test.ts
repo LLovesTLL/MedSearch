@@ -57,7 +57,7 @@ describe('7.3 加载状态联动与防重复触发', () => {
     expect(findButton(wrapper, '开始检索文献')!.attributes('disabled')).toBeDefined()
   })
 
-  it('检索进行中：检索/总结/更多文献按钮全部禁用，板块展示加载提示', async () => {
+  it('翻页请求进行中：分页与总结控件全部禁用，列表保持不闪烁', async () => {
     mockFetch({
       '/api/keywords/generate': () => ({ keywords: ['肺腺癌', 'EGFR突变', '预后'] }),
       '/api/literature/search': () => ({
@@ -78,14 +78,17 @@ describe('7.3 加载状态联动与防重复触发', () => {
 
     vi.unstubAllGlobals()
     mockFetchPending()
-    await wrapper.find('.literature-actions .btn-secondary').trigger('click')
+    await findButton(wrapper, '下一页')!.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('正在检索 PubMed 文献，请稍候…')
-    expect(wrapper.find('.literature-actions .btn-secondary').text()).toContain('加载中…')
+    const pageButtons = wrapper.findAll('.pagination-btn')
+    expect(pageButtons).toHaveLength(2)
+    expect(pageButtons[0].attributes('disabled')).toBeDefined()
+    expect(pageButtons[1].attributes('disabled')).toBeDefined()
+    expect(pageButtons[1].text()).toContain('加载中…')
+    expect(wrapper.find('.page-input').attributes('disabled')).toBeDefined()
     expect(wrapper.findAll('.literature-item')).toHaveLength(9)
     expect(wrapper.find('.action-row .btn-primary').attributes('disabled')).toBeDefined()
     expect(wrapper.find('.literature-actions .btn-primary').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('.literature-actions .btn-secondary').attributes('disabled')).toBeDefined()
   })
 })
 

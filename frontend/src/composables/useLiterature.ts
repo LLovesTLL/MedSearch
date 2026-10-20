@@ -62,20 +62,34 @@ export function useLiterature() {
     }
   }
 
-  async function loadMore(): Promise<{ ok: boolean; message?: string }> {
+  async function goToPage(
+    target: number
+  ): Promise<{ ok: boolean; message?: string; fromCache?: boolean }> {
     if (state.status === 'loading') {
       return { ok: false }
     }
-    if (state.currentPage >= state.totalPages) {
-      return { ok: false }
+    if (!Number.isInteger(target) || target < 1) {
+      return { ok: false, message: '请输入有效的页码' }
+    }
+    if (state.totalPages > 0 && target > state.totalPages) {
+      return { ok: false, message: `页码超出范围，共 ${state.totalPages} 页` }
+    }
+    if (target === state.currentPage) {
+      return { ok: true, fromCache: true }
     }
 
-    const nextPage = state.currentPage + 1
+    const cached = pagesCache.get(target)
+    if (cached) {
+      state.articles = cached
+      state.currentPage = target
+      return { ok: true, fromCache: true }
+    }
+
     state.status = 'loading'
     try {
       const data = await apiClient.postSearch<LiteratureSearchData>(
         '/api/literature/search',
-        { keywords: currentKeywords, page: nextPage }
+        { keywords: currentKeywords, page: target }
       )
       pagesCache.set(data.page, data.articles)
       state.articles = data.articles
@@ -92,6 +106,14 @@ export function useLiterature() {
           : '文献检索失败，请稍后重试'
       return { ok: false, message }
     }
+  }
+
+  function goPrev(): Promise<{ ok: boolean; message?: string; fromCache?: boolean }> {
+    return goToPage(state.currentPage - 1)
+  }
+
+  function goNext(): Promise<{ ok: boolean; message?: string; fromCache?: boolean }> {
+    return goToPage(state.currentPage + 1)
   }
 
   function toggleSelect(pmid: string): void {
@@ -139,7 +161,9 @@ export function useLiterature() {
   return {
     state,
     searchLiterature,
-    loadMore,
+    goToPage,
+    goPrev,
+    goNext,
     toggleSelect,
     isSelected,
     getSelectedMetas,

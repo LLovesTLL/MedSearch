@@ -15,6 +15,9 @@ __pycache__/
 # 前端测试编译产物（esbuild 生成）
 frontend/tests/*.mjs
 
+# TypeScript 增量编译信息
+*.tsbuildinfo
+
 # 工具目录与快照
 .arts/
 .merkle-snapshot.json

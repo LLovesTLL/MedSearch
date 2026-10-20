@@ -151,3 +151,97 @@ describe('8.3 组件渲染与核心交互（7.2 自动化全流程）', () => {
     expect(wrapper.find('.toast-message').text()).toBe('该关键词已存在')
   })
 })
+describe('8.4 文献列表分页控件', () => {
+  async function mountWithSearch(totalPages: number) {
+    const fetchFn = mockFetch({
+      '/api/keywords/generate': () => ({ keywords: ['肺腺癌', 'EGFR突变', '预后'] }),
+      '/api/literature/search': (body) => {
+        const page = Number(body.page ?? 1)
+        const base = 100 + (page - 1) * 9
+        return {
+          totalCount: 2869,
+          page,
+          pageSize: 9,
+          totalPages,
+          articles: makeArticles(9).map((a, i) => ({ ...a, pmid: String(base + i) })),
+        }
+      },
+    })
+    wrapper = mount(App)
+    await wrapper.find('textarea').setValue('肺腺癌的EGFR突变与预后相关性')
+    await findButton(wrapper, '生成关键词')!.trigger('click')
+    await flushPromises()
+    await findButton(wrapper, '开始检索文献')!.trigger('click')
+    await flushPromises()
+    return fetchFn
+  }
+
+  function searchCalls(fn: ReturnType<typeof mockFetch>) {
+    return fn.mock.calls.filter(([url]) => url === '/api/literature/search')
+  }
+
+  it('点击下一页请求第二页并更新列表与页码', async () => {
+    const fetchFn = await mountWithSearch(319)
+    expect(searchCalls(fetchFn)).toHaveLength(1)
+
+    await findButton(wrapper, '下一页')!.trigger('click')
+    await flushPromises()
+
+    const calls = searchCalls(fetchFn)
+    expect(calls).toHaveLength(2)
+    expect(JSON.parse(String(calls[1][1]?.body)).page).toBe(2)
+    expect(wrapper.text()).toContain('当前第 2 页，共 319 页')
+    expect(wrapper.find('.item-pmid').text()).toContain('109')
+  })
+
+  it('翻回已缓存页不发请求且恢复列表', async () => {
+    const fetchFn = await mountWithSearch(319)
+    await findButton(wrapper, '下一页')!.trigger('click')
+    await flushPromises()
+    expect(searchCalls(fetchFn)).toHaveLength(2)
+
+    await findButton(wrapper, '上一页')!.trigger('click')
+    await flushPromises()
+
+    expect(searchCalls(fetchFn)).toHaveLength(2)
+    expect(wrapper.text()).toContain('当前第 1 页，共 319 页')
+    expect(wrapper.find('.item-pmid').text()).toContain('100')
+  })
+
+  it('页码输入超范围回车提示并回显当前页', async () => {
+    await mountWithSearch(319)
+    const input = wrapper.find('.page-input')
+    await input.setValue('999')
+    await input.trigger('keyup.enter')
+    await flushPromises()
+    expect(wrapper.find('.toast-message').text()).toBe('页码超出范围，共 319 页')
+    expect((input.element as HTMLInputElement).value).toBe('1')
+  })
+
+  it('非数字页码提示请输入有效页码', async () => {
+    await mountWithSearch(319)
+    const input = wrapper.find('.page-input')
+    await input.setValue('abc')
+    await input.trigger('keyup.enter')
+    await flushPromises()
+    expect(wrapper.find('.toast-message').text()).toBe('请输入有效的页码')
+    expect((input.element as HTMLInputElement).value).toBe('1')
+  })
+
+  it('页码输入回车跳转到指定页', async () => {
+    const fetchFn = await mountWithSearch(319)
+    const input = wrapper.find('.page-input')
+    await input.setValue('5')
+    await input.trigger('keyup.enter')
+    await flushPromises()
+    expect(wrapper.text()).toContain('当前第 5 页，共 319 页')
+    expect(JSON.parse(String(searchCalls(fetchFn)[1][1]?.body)).page).toBe(5)
+    expect((input.element as HTMLInputElement).value).toBe('5')
+  })
+
+  it('单页结果时上一页与下一页均禁用', async () => {
+    await mountWithSearch(1)
+    expect(findButton(wrapper, '上一页')!.attributes('disabled')).toBeDefined()
+    expect(findButton(wrapper, '下一页')!.attributes('disabled')).toBeDefined()
+  })
+})

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useLiterature } from '../composables/useLiterature'
 import { useSummary } from '../composables/useSummary'
@@ -7,7 +7,7 @@ import { useToast } from '../composables/useToast'
 import BlockLoading from './common/BlockLoading.vue'
 import EmptyState from './common/EmptyState.vue'
 
-const { state, loadMore, toggleSelect, isSelected, getSelectedMetas } =
+const { state, goToPage, goPrev, goNext, toggleSelect, isSelected, getSelectedMetas } =
   useLiterature()
 const { state: summaryState, generateSummaries } = useSummary()
 const { showToast } = useToast()
@@ -16,12 +16,49 @@ const subtitle = computed(() =>
   `检索到${state.totalCount}条PubMed医学文献，已为您筛选 9 篇相关文献，请勾选文献，MedSearch将为您生成专业的总结报告。`
 )
 
-const hasMore = computed(() => state.currentPage < state.totalPages)
-
 const literatureLoading = computed(() => state.status === 'loading')
 
-async function handleLoadMore(): Promise<void> {
-  const result = await loadMore()
+const actionsDisabled = computed(
+  () => literatureLoading.value || summaryState.status === 'loading'
+)
+
+const canGoPrev = computed(() => state.currentPage > 1)
+
+const canGoNext = computed(() => state.currentPage < state.totalPages)
+
+const pageInput = ref(String(state.currentPage))
+
+watch(
+  () => state.currentPage,
+  (page) => {
+    pageInput.value = String(page)
+  }
+)
+
+async function handleGoToPage(): Promise<void> {
+  const target = Number.parseInt(pageInput.value, 10)
+  const result = await goToPage(target)
+  if (!result.ok && result.message) {
+    showToast(result.message)
+  }
+  pageInput.value = String(state.currentPage)
+}
+
+async function handlePrev(): Promise<void> {
+  if (!canGoPrev.value || actionsDisabled.value) {
+    return
+  }
+  const result = await goPrev()
+  if (!result.ok && result.message) {
+    showToast(result.message)
+  }
+}
+
+async function handleNext(): Promise<void> {
+  if (!canGoNext.value || actionsDisabled.value) {
+    return
+  }
+  const result = await goNext()
   if (!result.ok && result.message) {
     showToast(result.message)
   }
@@ -93,15 +130,39 @@ async function handleGenerateSummary(): Promise<void> {
         <span class="page-info">当前第 {{ state.currentPage }} 页，共 {{ state.totalPages }} 页</span>
       </div>
 
-      <div class="literature-actions">
+      <div class="pagination" role="navigation" aria-label="文献分页">
         <button
-          class="btn-secondary"
+          class="btn-secondary pagination-btn"
           type="button"
-          :disabled="!hasMore || literatureLoading || summaryState.status === 'loading'"
-          @click="handleLoadMore"
+          :disabled="!canGoPrev || actionsDisabled"
+          @click="handlePrev"
         >
-          {{ literatureLoading ? '加载中…' : '更多文献' }}
+          {{ literatureLoading ? '加载中…' : '上一页' }}
         </button>
+        <div class="page-jump">
+          <span class="page-jump-label">第</span>
+          <input
+            v-model="pageInput"
+            class="page-input"
+            type="text"
+            inputmode="numeric"
+            :disabled="actionsDisabled"
+            :aria-label="`页码定位，共 ${state.totalPages} 页`"
+            @keyup.enter="handleGoToPage"
+          />
+          <span class="page-jump-label">/ {{ state.totalPages }} 页</span>
+        </div>
+        <button
+          class="btn-secondary pagination-btn"
+          type="button"
+          :disabled="!canGoNext || actionsDisabled"
+          @click="handleNext"
+        >
+          {{ literatureLoading ? '加载中…' : '下一页' }}
+        </button>
+      </div>
+
+      <div class="literature-actions">
         <button
           class="btn-primary"
           type="button"
@@ -208,7 +269,53 @@ async function handleGenerateSummary(): Promise<void> {
   flex: 1;
 }
 
-.literature-actions .btn-secondary {
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pagination-btn {
+  flex-shrink: 0;
+  min-width: 76px;
+}
+
+.page-jump {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
+.page-jump-label {
+  flex-shrink: 0;
+}
+
+.page-input {
+  width: 48px;
+  height: 32px;
+  padding: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-foreground);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.page-input:focus {
+  border-color: var(--color-accent);
+}
+
+.page-input:disabled {
+  opacity: 0.6;
 }
 </style>
